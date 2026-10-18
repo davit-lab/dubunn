@@ -25,9 +25,9 @@ function ClickHandler({ onChange }: { onChange: (lat: number, lng: number) => vo
   return null;
 }
 
-function Recenter({ lat, lng }: { lat: number; lng: number }) {
+function Recenter({ lat, lng, selected }: { lat: number; lng: number; selected: boolean }) {
   const map = useMap();
-  useEffect(() => { map.setView([lat, lng], map.getZoom()); }, [lat, lng, map]);
+  useEffect(() => { map.setView([lat, lng], selected ? Math.max(map.getZoom(), 16) : 13); }, [lat, lng, selected, map]);
   return null;
 }
 
@@ -41,7 +41,7 @@ export default function MapPickerInner({ lat, lng, centerLat, centerLng, onChang
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ClickHandler onChange={onChange} />
-        <Recenter lat={center[0]} lng={center[1]} />
+        <Recenter lat={center[0]} lng={center[1]} selected={lat != null && lng != null} />
         {lat != null && lng != null && <Marker position={[lat, lng]} icon={icon} />}
       </MapContainer>
     </div>

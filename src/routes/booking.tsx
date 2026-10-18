@@ -440,6 +440,8 @@ function BookingPage() {
                   <FL>{lang === 'ka' ? 'მონიშნეთ მისამართი რუქაზე' : 'Pin on map'}</FL>
                   <div className="rounded-2xl overflow-hidden border-2 border-ink/20">
                     <MapPicker
+                      city={CITIES.find(c => c.id === customer.city)?.[lang]}
+                      onSelectAddress={address => setCustomer(c => ({ ...c, address }))}
                       lat={customer.lat}
                       lng={customer.lng}
                       centerLat={CITIES.find(c => c.id === customer.city)?.lat ?? DEFAULT_CITY.lat}

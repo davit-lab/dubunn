@@ -204,9 +204,12 @@ function Home() {
               <div className="flex flex-wrap gap-4 mt-2">
                 <Link
                   to="/booking"
-                  className="inline-flex items-center gap-2 bg-white text-ink border-[3px] border-ink rounded-2xl px-6 py-4 font-display text-lg shadow-sticker-lg press"
+                  className="group inline-flex min-h-16 items-center justify-center gap-5 rounded-2xl border-[3px] border-ink bg-gradient-to-br from-red-500 to-red-700 px-7 py-4 font-display text-xl text-white shadow-sticker-lg press focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-300 focus-visible:ring-offset-4 motion-reduce:transition-none"
                 >
                   {t.ui.book || (lang === 'ka' ? 'დაჯავშნა' : 'Book now')}
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30" aria-hidden="true">
+                    <ArrowRight size={20} className="transition-transform group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" />
+                  </span>
                 </Link>
               </div>
 

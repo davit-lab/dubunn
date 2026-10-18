@@ -12,24 +12,16 @@ export interface ContentStore {
   passwordRecovery: boolean;
   user: any | null;
   isLoaded: boolean;
+  loadError: string | null;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  saveError: string | null;
+  retrySave: () => void;
   init: () => void;
   setAuth: (user: any | null, isAdmin: boolean) => void;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<boolean>;
   updateAssets: (a: Partial<typeof ASSETS>) => void;
   updateTranslation: (lang: Language, path: string, value: any) => void;
   resetToDefault: () => void;
-}
-
-function mergeArrayById(defaults: any[], remote?: any[]): any[] {
-  if (!Array.isArray(remote)) return defaults;
-  const merged = remote.map((remoteItem: any) => {
-    const def =
-      defaults.find((d: any) => d.id && d.id === remoteItem.id) ||
-      (remoteItem.name && defaults.find((d: any) => d.name === remoteItem.name));
-    if (def) return { ...def, ...remoteItem, id: remoteItem.id || def.id };
-    return remoteItem.id ? remoteItem : null;
-  }).filter(Boolean);
-  return merged;
 }
 
 function setNested(obj: any, path: string, value: any) {
@@ -46,110 +38,121 @@ function setNested(obj: any, path: string, value: any) {
   return result;
 }
 
+type Patch = { assets: Record<string, any>; translations: Record<string, any>; reset?: boolean };
+let pending: Patch | null = null;
+let inFlight = false;
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
-let realtimeTimer: ReturnType<typeof setTimeout> | null = null;
-let lastSelf = 0;
-async function persist(assets: any, translations: any) {
+let lastApplied = 0;
+let latestRemote: any = null;
+
+function normalize(row: any) {
+  const translations: any = {};
+  for (const lang of ['ka', 'en'] as Language[]) {
+    const defaults = TRANSLATIONS[lang];
+    const remote = row.translations?.[lang] || {};
+    translations[lang] = {
+      ...defaults, ...remote,
+      ui: { ...defaults.ui, ...remote.ui },
+      animators: remote.animators ?? [], hosts: remote.hosts ?? [],
+      programs: remote.programs ?? [], services: remote.services ?? [],
+    };
+  }
+  return { assets: { ...ASSETS, ...row.assets }, translations, isLoaded: true, loadError: null };
+}
+
+function applyRemote(row: any) {
+  if (!row || row.id !== ROW_ID) return;
+  if (Date.parse(row.updated_at) < lastApplied) return;
+  if (pending || inFlight) {
+    if (!latestRemote || Date.parse(row.updated_at) >= Date.parse(latestRemote.updated_at)) latestRemote = row;
+    return;
+  }
+  lastApplied = Date.parse(row.updated_at) || lastApplied;
+  useContentStore.setState(normalize(row));
+}
+
+function mergePatch(base: any, patch: any): any {
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return patch;
+  const result = { ...base };
+  for (const key of Object.keys(patch)) result[key] = mergePatch(result[key], patch[key]);
+  return result;
+}
+
+function translationPatch(updated: any, path: string) {
+  const keys = path.split('.');
+  const patch: any = {};
+  let source = updated, target = patch;
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    if (i === keys.length - 1 || Array.isArray(source[key])) { target[key] = source[key]; break; }
+    target[key] = {};
+    target = target[key]; source = source[key];
+  }
+  return patch;
+}
+
+function combine(first: Patch | null, second: Patch): Patch {
+  if (!first || second.reset) return second;
+  return { assets: mergePatch(first.assets, second.assets), translations: mergePatch(first.translations, second.translations), reset: first.reset };
+}
+
+async function flushSave() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (inFlight || !pending) return;
+  inFlight = true;
+  useContentStore.setState({ saveStatus: 'saving', saveError: null });
+  const patch = pending;
+  pending = null;
+  let failed = false;
+  try {
+    const { data, error } = await (supabase.rpc as any)('patch_site_content', {
+      _assets: patch.assets, _translations: patch.translations, _reset: !!patch.reset,
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row?.id) throw new Error('The database did not confirm this save.');
+    if (!latestRemote || Date.parse(row.updated_at) >= Date.parse(latestRemote.updated_at)) latestRemote = row;
+  } catch (error: any) {
+    pending = pending ? combine(patch, pending) : patch;
+    failed = true;
+    useContentStore.setState({ saveStatus: 'error', saveError: error?.message || 'Could not save changes. Please retry.' });
+  } finally {
+    inFlight = false;
+  }
+  if (failed) return;
+  if (pending) { await flushSave(); return; }
+  if (latestRemote) { const row = latestRemote; latestRemote = null; applyRemote(row); }
+  useContentStore.setState({ saveStatus: 'saved', saveError: null });
+}
+
+function queueSave(patch: Patch) {
+  pending = combine(pending, patch);
+  useContentStore.setState({ saveStatus: 'saving', saveError: null });
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(async () => {
-    lastSelf = Date.now();
-    const { error } = await supabase
-      .from('site_content')
-      .upsert({ id: ROW_ID, assets, translations }, { onConflict: 'id' });
-    if (error) console.error('[content] save', error);
-  }, 350);
+  saveTimer = setTimeout(() => { void flushSave(); }, 350);
 }
 
 export const useContentStore = create<ContentStore>((set, get) => ({
   assets: { ...ASSETS },
   translations: JSON.parse(JSON.stringify(TRANSLATIONS)),
-  isAdmin: false,
-  passwordRecovery: false,
-  user: null,
-  isLoaded: false,
-
+  isAdmin: false, passwordRecovery: false, user: null, isLoaded: false, loadError: null,
+  saveStatus: 'idle', saveError: null,
+  retrySave: () => { void flushSave(); },
   init: () => {
-    if (!isSupabaseConfigured) {
-      console.error('[content] Supabase is not configured — using default site content only.');
-      set({ isLoaded: true });
-      return;
-    }
-
-    supabase
-      .from('site_content')
-      .select('assets, translations')
-      .eq('id', ROW_ID)
-      .maybeSingle()
-      .then(({ data }) => {
-        const defaultT = JSON.parse(JSON.stringify(TRANSLATIONS));
-        const remoteT: any = data?.translations || {};
-        const final: any = {};
-        (['ka', 'en'] as Language[]).forEach((l) => {
-          const rem = remoteT[l] || {};
-          final[l] = {
-            ...defaultT[l],
-            ...rem,
-            nav: defaultT[l].nav,
-            ui: { ...(defaultT[l].ui || {}), ...(rem.ui || {}) },
-            animators: mergeArrayById(defaultT[l].animators || [], rem.animators),
-            hosts: mergeArrayById(defaultT[l].hosts || [], rem.hosts),
-            programs: mergeArrayById(defaultT[l].programs || [], rem.programs),
-            services: mergeArrayById(defaultT[l].services || [], rem.services),
-          };
-        });
-        const storedVersion = (remoteT as any)._version || 0;
-        if (storedVersion < TRANSLATIONS_VERSION) {
-          (['ka', 'en'] as Language[]).forEach((l) => {
-            final[l].ui.animatorsTitle = defaultT[l].ui.animatorsTitle;
-            final[l].ui.animatorsDesc = defaultT[l].ui.animatorsDesc;
-          });
-          final._version = TRANSLATIONS_VERSION;
-          const remoteA2: any = data?.assets || {};
-          lastSelf = Date.now();
-          supabase.from('site_content').upsert(
-            { id: ROW_ID, assets: { ...ASSETS, ...remoteA2 }, translations: final },
-            { onConflict: 'id' }
-          ).then(({ error }) => { if (error) console.error('[migration]', error); });
-        } else {
-          final._version = storedVersion;
-        }
-        const remoteA: any = data?.assets || {};
-        set({
-          assets: { ...ASSETS, ...remoteA },
-          translations: final,
-          isLoaded: true,
-        });
-      });
-
-    supabase
-      .channel('site_content_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_content' }, (payload) => {
-        if (Date.now() - lastSelf < 1500) return;
-        const row: any = payload.new;
-        if (!row) return;
-        if (realtimeTimer) clearTimeout(realtimeTimer);
-        realtimeTimer = setTimeout(() => {
-          const defaultT = JSON.parse(JSON.stringify(TRANSLATIONS));
-          const remoteT: any = row.translations || {};
-          const final: any = {};
-          (['ka', 'en'] as Language[]).forEach((l) => {
-            const rem = remoteT[l] || {};
-            final[l] = {
-              ...defaultT[l],
-              ...rem,
-              ui: { ...(defaultT[l].ui || {}), ...(rem.ui || {}) },
-              animators: mergeArrayById(defaultT[l].animators || [], rem.animators),
-              hosts: mergeArrayById(defaultT[l].hosts || [], rem.hosts),
-              programs: mergeArrayById(defaultT[l].programs || [], rem.programs),
-              services: mergeArrayById(defaultT[l].services || [], rem.services),
-            };
-          });
-          final._version = (remoteT as any)._version || TRANSLATIONS_VERSION;
-          set({ assets: { ...ASSETS, ...(row.assets || {}) }, translations: final });
-        }, 200);
-      })
+    if (!isSupabaseConfigured) { set({ isLoaded: true }); return; }
+    void (async () => {
+      try {
+        const { data, error } = await supabase.from('site_content').select('id, assets, translations, updated_at').eq('id', ROW_ID).maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error('Site content is missing.');
+        applyRemote(data);
+      } catch (error: any) {
+        set({ loadError: error?.message || 'Could not load site content.' });
+      }
+    })();
+    supabase.channel('site_content_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_content', filter: 'id=eq.main' }, payload => applyRemote(payload.new))
       .subscribe();
-
     // Auth bootstrap — skip redundant updates that can cause UI flicker
     const applySession = (u: { id: string } | null) => {
       const prev = get().user;
@@ -174,29 +177,34 @@ export const useContentStore = create<ContentStore>((set, get) => ({
       applySession(data.session?.user ?? null);
     });
   },
-
   setAuth: (user, isAdmin) => set({ user, isAdmin }),
   signOut: async () => {
-    await supabase.auth.signOut();
+    if (pending || inFlight) {
+      await flushSave();
+      if (pending || inFlight) return false;
+    }
+    const { error } = await supabase.auth.signOut();
+    if (error) return false;
     set({ user: null, isAdmin: false });
+    return true;
   },
   updateAssets: (newA) => {
-    const s = get();
-    const updated = { ...s.assets, ...newA };
-    set({ assets: updated });
-    persist(updated, s.translations);
+    if (!get().isAdmin || !get().isLoaded) return;
+    set({ assets: { ...get().assets, ...newA } });
+    queueSave({ assets: newA, translations: {} });
   },
   updateTranslation: (lang, path, value) => {
-    const s = get();
-    const updated = { ...s.translations, [lang]: setNested(s.translations[lang], path, value) };
-    set({ translations: updated });
-    persist(s.assets, updated);
+    if (!get().isAdmin || !get().isLoaded) return;
+    const updated = setNested(get().translations[lang], path, value);
+    set({ translations: { ...get().translations, [lang]: updated } });
+    queueSave({ assets: {}, translations: { [lang]: translationPatch(updated, path) } });
   },
   resetToDefault: () => {
-    const a = { ...ASSETS };
-    const t = JSON.parse(JSON.stringify(TRANSLATIONS));
-    set({ assets: a, translations: t });
-    persist(a, t);
+    if (!get().isAdmin || !get().isLoaded) return;
+    const assets = structuredClone(ASSETS);
+    const translations = structuredClone(TRANSLATIONS);
+    set({ assets, translations });
+    queueSave({ assets, translations: { ...translations, _version: TRANSLATIONS_VERSION }, reset: true });
   },
 }));
 
@@ -204,4 +212,7 @@ let contentStoreInitialized = false;
 if (typeof window !== 'undefined' && !contentStoreInitialized) {
   contentStoreInitialized = true;
   useContentStore.getState().init();
+  window.addEventListener('beforeunload', event => {
+    if (pending || inFlight) { event.preventDefault(); event.returnValue = ''; }
+  });
 }

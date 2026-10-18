@@ -72,7 +72,7 @@ function AccountPage() {
   }, [user?.id]);
 
   const handleLogout = async () => {
-    await signOut();
+    if (!await signOut()) return;
     navigate({ to: '/' });
   };
 

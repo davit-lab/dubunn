@@ -82,7 +82,7 @@ function NotAdmin() {
           {claiming && <Loader2 size={16} className="animate-spin" />}
           Claim admin (first user only)
         </button>
-        <button onClick={() => { signOut(); window.location.href = '/'; }} className="w-full px-8 py-4 rounded-2xl bg-muted font-bold uppercase tracking-widest hover:bg-card transition-all">
+        <button onClick={async () => { if (await signOut()) window.location.href = '/'; }} className="w-full px-8 py-4 rounded-2xl bg-muted font-bold uppercase tracking-widest hover:bg-card transition-all">
           Sign Out
         </button>
       </div>
@@ -109,12 +109,11 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
 ];
 
 function AdminPanel() {
-  const { assets, translations, updateAssets, updateTranslation, signOut, resetToDefault } = useContentStore();
+  const { assets, translations, updateAssets, updateTranslation, signOut, resetToDefault, saveStatus, saveError, retrySave } = useContentStore();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('bookings');
   const [lang, setLang] = useState<Language>('ka');
-  const [saved, setSaved] = useState(false);
-  const flash = () => { setSaved(true); setTimeout(() => setSaved(false), 1200); };
+  const flash = () => {}; // Save status comes from the database response.
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -134,7 +133,7 @@ function AdminPanel() {
         <div className="p-2 border-t border-border flex flex-col gap-1">
           <button onClick={() => { if (confirm('Reset all content to defaults?')) { resetToDefault(); flash(); } }} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-destructive hover:bg-destructive/10"><RotateCcw size={14} /> Reset</button>
           <a href="/" className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted">← Back to site</a>
-          <button onClick={async () => { await signOut(); navigate({ to: '/auth' }); }} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted"><LogOut size={14} /> Sign out</button>
+          <button disabled={saveStatus === 'saving' || saveStatus === 'error'} onClick={async () => { if (await signOut()) navigate({ to: '/auth' }); }} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-muted-foreground hover:bg-muted"><LogOut size={14} /> Sign out</button>
         </div>
       </aside>
 
@@ -151,7 +150,11 @@ function AdminPanel() {
                 ))}
               </div>
             )}
-            {saved && <span className="text-xs font-bold text-primary flex items-center gap-1"><Save size={12} /> Saved</span>}
+            <div role="status" aria-live="polite" className="text-xs font-bold flex items-center gap-2">
+              {saveStatus === 'saving' && <><Loader2 size={12} className="animate-spin" /> Saving…</>}
+              {saveStatus === 'saved' && <><Save size={12} /> Saved</>}
+              {saveStatus === 'error' && <><span className="text-destructive">Not saved: {saveError}</span><button onClick={retrySave} className="underline">Retry save</button></>}
+            </div>
           </div>
         </header>
         <div className="p-6 md:p-10 max-w-5xl">

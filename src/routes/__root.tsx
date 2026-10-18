@@ -11,6 +11,8 @@ import {
 
 import appCss from "../styles.css?url";
 import { Nav, Footer, Blobs } from "@/components/site/Layout";
+import { useContentStore } from '@/store/contentStore';
+import { useLangStore } from '@/store/langStore';
 import { ThemeApplier } from "@/components/site/ThemeApplier";
 
 /** True when Vite mounts the app into index.html #root (SPA), not full-document SSR. */
@@ -115,6 +117,19 @@ function RootComponent() {
 
 function SiteFrame() {
   const location = useLocation();
+  const { isLoaded, loadError } = useContentStore();
+  const { lang } = useLangStore();
+  if (!isLoaded) return (
+    <div className="min-h-screen flex items-center justify-center bg-cream px-4">
+      {loadError ? <div role="alert" className="text-center flex flex-col items-center gap-4">
+        <p className="font-bold">{lang === 'ka' ? 'გვერდი ვერ ჩაიტვირთა. სცადეთ ხელახლა.' : 'The page could not load. Please try again.'}</p>
+        <button onClick={() => window.location.reload()} className="px-5 py-3 rounded-xl bg-coral text-white font-bold">{lang === 'ka' ? 'ხელახლა ცდა' : 'Try again'}</button>
+      </div> : <div role="status" className="flex items-center gap-3 font-bold">
+        <span className="w-5 h-5 rounded-full border-2 border-ink/20 border-t-coral animate-spin" aria-hidden="true" />
+        {lang === 'ka' ? 'იტვირთება…' : 'Loading…'}
+      </div>}
+    </div>
+  );
   const isAdmin = location.pathname.startsWith("/admin");
   const isAuth = location.pathname === "/auth";
   if (isAdmin || isAuth) {

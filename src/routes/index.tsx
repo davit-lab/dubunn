@@ -256,6 +256,10 @@ function Home() {
                       muted
                       loop
                       playsInline
+                      preload="auto"
+                      disablePictureInPicture
+                      onCanPlay={(event) => { void event.currentTarget.play().catch(() => {}); }}
+                      onPause={(event) => { if (!document.hidden) void event.currentTarget.play().catch(() => {}); }}
                       poster={heroFallback}
                       className="w-full h-full object-cover"
                     />

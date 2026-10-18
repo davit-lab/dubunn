@@ -3,7 +3,7 @@ import logo from '@/assets/logo.png';
 
 export const ASSETS = {
   logo,
-  heroVideo: 'https://framerusercontent.com/assets/nM4DyIHwgOozU0nZZReJ4GVU.mp4',
+  heroVideo: '/media/hero-1778853910261.mp4',
   heroFallback: 'https://images.unsplash.com/photo-1519337265831-281ec6cc8514?q=80&w=2670&auto=format&fit=crop',
   // Theme colors (oklch). Edit from admin → Theme tab.
   colors: {

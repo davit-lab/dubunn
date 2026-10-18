@@ -20,8 +20,8 @@ export interface ContentStore {
   resetToDefault: () => void;
 }
 
-function mergeArrayById(defaults: any[], remote: any[]): any[] {
-  if (!remote || remote.length === 0) return defaults;
+function mergeArrayById(defaults: any[], remote?: any[]): any[] {
+  if (!Array.isArray(remote)) return defaults;
   const merged = remote.map((remoteItem: any) => {
     const def =
       defaults.find((d: any) => d.id && d.id === remoteItem.id) ||
@@ -29,7 +29,7 @@ function mergeArrayById(defaults: any[], remote: any[]): any[] {
     if (def) return { ...def, ...remoteItem, id: remoteItem.id || def.id };
     return remoteItem.id ? remoteItem : null;
   }).filter(Boolean);
-  return merged.length > 0 ? merged : defaults;
+  return merged;
 }
 
 function setNested(obj: any, path: string, value: any) {
@@ -91,10 +91,10 @@ export const useContentStore = create<ContentStore>((set, get) => ({
             ...rem,
             nav: defaultT[l].nav,
             ui: { ...(defaultT[l].ui || {}), ...(rem.ui || {}) },
-            animators: mergeArrayById(defaultT[l].animators || [], rem.animators || []),
-            hosts: mergeArrayById(defaultT[l].hosts || [], rem.hosts || []),
-            programs: mergeArrayById(defaultT[l].programs || [], rem.programs || []),
-            services: mergeArrayById(defaultT[l].services || [], rem.services || []),
+            animators: mergeArrayById(defaultT[l].animators || [], rem.animators),
+            hosts: mergeArrayById(defaultT[l].hosts || [], rem.hosts),
+            programs: mergeArrayById(defaultT[l].programs || [], rem.programs),
+            services: mergeArrayById(defaultT[l].services || [], rem.services),
           };
         });
         const storedVersion = (remoteT as any)._version || 0;
@@ -138,10 +138,10 @@ export const useContentStore = create<ContentStore>((set, get) => ({
               ...defaultT[l],
               ...rem,
               ui: { ...(defaultT[l].ui || {}), ...(rem.ui || {}) },
-              animators: mergeArrayById(defaultT[l].animators || [], rem.animators || []),
-              hosts: mergeArrayById(defaultT[l].hosts || [], rem.hosts || []),
-              programs: mergeArrayById(defaultT[l].programs || [], rem.programs || []),
-              services: mergeArrayById(defaultT[l].services || [], rem.services || []),
+              animators: mergeArrayById(defaultT[l].animators || [], rem.animators),
+              hosts: mergeArrayById(defaultT[l].hosts || [], rem.hosts),
+              programs: mergeArrayById(defaultT[l].programs || [], rem.programs),
+              services: mergeArrayById(defaultT[l].services || [], rem.services),
             };
           });
           final._version = (remoteT as any)._version || TRANSLATIONS_VERSION;

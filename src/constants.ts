@@ -97,11 +97,7 @@ export const TRANSLATIONS: Record<Language, any> = {
       { id: 'unicorn', name: 'ცისარტყელა ერთრქა', pricePerHour: 90, maxHours: 3, role: 'გმირი', category: 'ფანტაზია', image: 'https://images.unsplash.com/photo-1599842057874-37393e9342df?q=80&w=1000&auto=format&fit=crop', description: 'ჯადოსნური სამყარო პატარებისთვის.', ageGroup: '3-7' },
       { id: 'pirate', name: 'მეკობრე კაპიტანი', pricePerHour: 70, maxHours: 4, role: 'გმირი', category: 'თავგადასავალი', image: 'https://images.unsplash.com/photo-1609205264511-b755d3a93cc4?q=80&w=1000&auto=format&fit=crop', description: 'საგანძურის ძიების თავგადასავალი.', ageGroup: '6-12' },
     ],
-    hosts: [
-      { id: 'natia', name: 'ნათია ბ.', pricePerHour: 70, maxHours: 6, role: 'ანიმატორი', category: 'ბავშვები', image: 'https://images.unsplash.com/photo-1559523161-0fc0d8b814a2?q=80&w=1000&auto=format&fit=crop', description: 'პროფესიონალი ბავშვთა პარტიების ანიმატორი.', ageGroup: '3-12' },
-      { id: 'giorgi', name: 'გიორგი ს.', pricePerHour: 90, maxHours: 6, role: 'DJ + ანიმატORი', category: 'DJ HOST', image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1000&auto=format&fit=crop', description: 'მუსიკა და ანიმაცია ერთად.', ageGroup: 'ყველა' },
-      { id: 'marina', name: 'მარინა კ.', pricePerHour: 80, maxHours: 8, role: 'ანიმATORი', category: 'VIP', image: 'https://images.unsplash.com/photo-1551836022-deb4988cc6c0?q=80&w=1000&auto=format&fit=crop', description: 'ელეგანტური ღონისძიებების წამყვანი.', ageGroup: 'ყველა' },
-    ],
+    hosts: [],
     programs: [
       { id: 'toddler', name: 'პატარების პROGRAMA', ageRange: '3-5', pricePerHour: 60, maxAnimators: 0, maxHosts: 1, maxHours: 2, category: 'ნაზი', image: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?q=80&w=1000&auto=format&fit=crop', description: 'ნაზი, ფერადი აქტივობები ჯადოსნური პერსონაჟებით.' },
       { id: 'kids', name: 'საბავშვო თავგადასავალი', ageRange: '6-9', pricePerHour: 80, maxAnimators: 2, maxHosts: 1, maxHours: 3, category: 'აქტიური', image: 'https://images.unsplash.com/photo-1576442161355-a89de7fd2b7e?q=80&w=1000&auto=format&fit=crop', description: 'აქტიური თამაშები, შეჯიბრებები და სუპერგმირები.' },
@@ -209,11 +205,7 @@ export const TRANSLATIONS: Record<Language, any> = {
       { id: 'unicorn', name: 'Rainbow Unicorn', pricePerHour: 90, maxHours: 3, role: 'Character', category: 'Fantasy', image: 'https://images.unsplash.com/photo-1599842057874-37393e9342df?q=80&w=1000&auto=format&fit=crop', description: 'Magical world for the little ones.', ageGroup: '3-7' },
       { id: 'pirate', name: 'Pirate Captain', pricePerHour: 70, maxHours: 4, role: 'Character', category: 'Adventure', image: 'https://images.unsplash.com/photo-1609205264511-b755d3a93cc4?q=80&w=1000&auto=format&fit=crop', description: 'Treasure hunt adventure.', ageGroup: '6-12' },
     ],
-    hosts: [
-      { id: 'natia', name: 'Natia B.', pricePerHour: 70, maxHours: 6, role: 'Animator', category: 'Kids', image: 'https://images.unsplash.com/photo-1559523161-0fc0d8b814a2?q=80&w=1000&auto=format&fit=crop', description: 'Professional kids party animator.', ageGroup: '3-12' },
-      { id: 'giorgi', name: 'Giorgi S.', pricePerHour: 90, maxHours: 6, role: 'DJ + Animator', category: 'DJ HOST', image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1000&auto=format&fit=crop', description: 'Music and animation combined.', ageGroup: 'All ages' },
-      { id: 'marina', name: 'Marina K.', pricePerHour: 80, maxHours: 8, role: 'Animator', category: 'VIP', image: 'https://images.unsplash.com/photo-1551836022-deb4988cc6c0?q=80&w=1000&auto=format&fit=crop', description: 'Elegant event host.', ageGroup: 'All ages' },
-    ],
+    hosts: [],
     programs: [
       { id: 'toddler', name: 'Toddler Program', ageRange: '3-5', pricePerHour: 60, maxAnimators: 0, maxHosts: 1, maxHours: 2, category: 'Gentle', image: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?q=80&w=1000&auto=format&fit=crop', description: 'Gentle, colorful activities with magical characters.' },
       { id: 'kids', name: 'Kids Adventure', ageRange: '6-9', pricePerHour: 80, maxAnimators: 2, maxHosts: 1, maxHours: 3, category: 'Active', image: 'https://images.unsplash.com/photo-1576442161355-a89de7fd2b7e?q=80&w=1000&auto=format&fit=crop', description: 'Active games, competitions and superheroes.' },

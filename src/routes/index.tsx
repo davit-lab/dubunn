@@ -203,13 +203,6 @@ function Home() {
 
               <div className="flex flex-wrap gap-4 mt-2">
                 <Link
-                  to="/animators"
-                  className="inline-flex items-center gap-2 bg-coral text-white border-[3px] border-ink rounded-2xl px-6 py-4 font-display text-lg shadow-sticker-lg press"
-                >
-                  {t.ui.seeAnimators || (lang === 'ka' ? 'ანიმატორების ნახვა' : 'See animators')}
-                  <ArrowRight size={18} />
-                </Link>
-                <Link
                   to="/booking"
                   className="inline-flex items-center gap-2 bg-white text-ink border-[3px] border-ink rounded-2xl px-6 py-4 font-display text-lg shadow-sticker-lg press"
                 >

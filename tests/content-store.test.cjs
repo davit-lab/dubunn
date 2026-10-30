@@ -23,7 +23,7 @@ async function setup(overrides = {}) {
   const supabase = {
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: copy(row) }) }) }) }),
     channel: () => ({ on() { return this; }, subscribe() { return this; } }),
-    auth: { onAuthStateChange() {}, getSession: async () => ({ data: { session: null } }) },
+    auth: { onAuthStateChange() { return { data: { subscription: { unsubscribe() {} } } }; }, getSession: async () => ({ data: { session: null } }) },
     rpc: async (_, args) => {
       calls.push(copy(args));
       if (rpcHandler) { const result = await rpcHandler(args); if (result) return result; }
@@ -38,11 +38,12 @@ async function setup(overrides = {}) {
   };
   const exports = {};
   const source = fs.readFileSync('src/store/contentStore.ts', 'utf8') + '\nexport { applyRemote };';
-  const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const compiled = ts.transpileModule(source.replaceAll('import.meta', 'importMeta'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   vm.runInNewContext(compiled, {
-    exports, structuredClone, console, Date,
+    exports, structuredClone, console, Date, importMeta: {},
     setTimeout: () => 1, clearTimeout() {},
     require(name) {
+      if (name === '@/integrations/supabase/updates') return { watchUpdates: (_, __, refresh) => { void refresh(); return () => {}; } };
       if (name === 'zustand') return { create };
       if (name === '@/constants') return { ASSETS: { logo: 'default.png' }, TRANSLATIONS: copy(defaults), TRANSLATIONS_VERSION: 2 };
       if (name === '@/integrations/supabase/client') return { supabase, isSupabaseConfigured: true };

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Bell, Check } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { watchUpdates } from '@/integrations/supabase/updates';
 import { useContentStore } from '@/store/contentStore';
 import { Link, useLocation } from '@tanstack/react-router';
 
@@ -28,17 +29,12 @@ export function NotificationBell() {
   useEffect(() => {
     if (!user) { setItems([]); return; }
     let cancel = false;
-    supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20).then(({ data }) => {
-      if (!cancel) setItems((data || []) as any);
+    setItems([]);
+    const stop = watchUpdates('notif-' + user.id, [{ table: 'notifications', filter: `user_id=eq.${user.id}` }], async () => {
+      const { data, error } = await supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20);
+      if (!cancel && !error) setItems(data || []);
     });
-    const ch = supabase.channel('notif-' + user.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (payload) => {
-        if (payload.eventType === 'INSERT') setItems((prev) => [payload.new as any, ...prev]);
-        if (payload.eventType === 'UPDATE') setItems((prev) => prev.map((n) => n.id === (payload.new as any).id ? payload.new as any : n));
-        if (payload.eventType === 'DELETE') setItems((prev) => prev.filter((n) => n.id !== (payload.old as any).id));
-      })
-      .subscribe();
-    return () => { cancel = true; supabase.removeChannel(ch); };
+    return () => { cancel = true; stop(); };
   }, [user?.id]);
 
   if (!user) return null;
@@ -46,7 +42,9 @@ export function NotificationBell() {
   const markAllRead = async () => {
     if (!unread) return;
     const ids = items.filter((n) => !n.read_at).map((n) => n.id);
-    await supabase.from('notifications').update({ read_at: new Date().toISOString() }).in('id', ids);
+    const read_at = new Date().toISOString();
+    const { error } = await supabase.from('notifications').update({ read_at }).in('id', ids);
+    if (!error) setItems(prev => prev.map(item => ids.includes(item.id) ? { ...item, read_at } : item));
   };
 
   return (

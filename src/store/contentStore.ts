@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { ASSETS, TRANSLATIONS, TRANSLATIONS_VERSION } from '@/constants';
 import type { Language } from '@/types';
 import { supabase, isSupabaseConfigured } from '@/integrations/supabase/client';
+import { watchUpdates } from '@/integrations/supabase/updates';
 
 const ROW_ID = 'main';
 
@@ -139,8 +140,10 @@ export const useContentStore = create<ContentStore>((set, get) => ({
   saveStatus: 'idle', saveError: null,
   retrySave: () => { void flushSave(); },
   init: () => {
+    if (contentStoreInitialized) return;
+    contentStoreInitialized = true;
     if (!isSupabaseConfigured) { set({ isLoaded: true }); return; }
-    void (async () => {
+    stopContentUpdates = watchUpdates('site_content_changes', [{ table: 'site_content', filter: 'id=eq.main' }], async () => {
       try {
         const { data, error } = await supabase.from('site_content').select('id, assets, translations, updated_at').eq('id', ROW_ID).maybeSingle();
         if (error) throw error;
@@ -149,10 +152,7 @@ export const useContentStore = create<ContentStore>((set, get) => ({
       } catch (error: any) {
         set({ loadError: error?.message || 'Could not load site content.' });
       }
-    })();
-    supabase.channel('site_content_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'site_content', filter: 'id=eq.main' }, payload => applyRemote(payload.new))
-      .subscribe();
+    });
     // Auth bootstrap — skip redundant updates that can cause UI flicker
     const applySession = (u: { id: string } | null) => {
       const prev = get().user;
@@ -168,11 +168,12 @@ export const useContentStore = create<ContentStore>((set, get) => ({
       }
     };
 
-    supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_e, session) => {
       if (_e === 'PASSWORD_RECOVERY') set({ passwordRecovery: true });
       if (_e === 'SIGNED_OUT') set({ passwordRecovery: false });
       applySession(session?.user ?? null);
     });
+    stopAuthListener = () => authListener.subscription.unsubscribe();
     supabase.auth.getSession().then(async ({ data }) => {
       applySession(data.session?.user ?? null);
     });
@@ -209,10 +210,20 @@ export const useContentStore = create<ContentStore>((set, get) => ({
 }));
 
 let contentStoreInitialized = false;
-if (typeof window !== 'undefined' && !contentStoreInitialized) {
-  contentStoreInitialized = true;
+let stopContentUpdates: (() => void) | undefined;
+let stopAuthListener: (() => void) | undefined;
+const warnUnsaved = (event: BeforeUnloadEvent) => {
+  if (pending || inFlight) { event.preventDefault(); event.returnValue = ''; }
+};
+if (typeof window !== 'undefined') {
   useContentStore.getState().init();
-  window.addEventListener('beforeunload', event => {
-    if (pending || inFlight) { event.preventDefault(); event.returnValue = ''; }
+  window.addEventListener('beforeunload', warnUnsaved);
+}
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    stopContentUpdates?.();
+    stopAuthListener?.();
+    window.removeEventListener('beforeunload', warnUnsaved);
   });
 }

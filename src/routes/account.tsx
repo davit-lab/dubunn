@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { watchUpdates } from '@/integrations/supabase/updates';
 import { useContentStore } from '@/store/contentStore';
 import { useLangStore } from '@/store/langStore';
 import { Calendar, MapPin, Clock, LogOut, CheckCircle2, Hourglass, XCircle, Loader2, User, Bell } from 'lucide-react';
@@ -46,29 +47,23 @@ function AccountPage() {
     if (user === null) return; // wait for hydration
     if (!user) { navigate({ to: '/auth' }); return; }
     let cancel = false;
-    (async () => {
-      setLoading(true);
+    setLoading(true);
+    setBookings([]);
+    setNotifs([]);
+    const stop = watchUpdates('account-' + user.id, [
+      { table: 'bookings', filter: `user_id=eq.${user.id}` },
+      { table: 'notifications', filter: `user_id=eq.${user.id}` },
+    ], async () => {
       const [b, n] = await Promise.all([
         supabase.from('bookings').select('*').eq('user_id', user.id).order('booking_date', { ascending: false }),
         supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
       ]);
       if (cancel) return;
-      setBookings((b.data || []) as any);
-      setNotifs((n.data || []) as any);
+      if (!b.error) setBookings((b.data || []) as any);
+      if (!n.error) setNotifs(n.data || []);
       setLoading(false);
-    })();
-
-    const ch = supabase.channel('account-' + user.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings', filter: `user_id=eq.${user.id}` }, (p) => {
-        if (p.eventType === 'INSERT') setBookings((prev) => [p.new as any, ...prev]);
-        else if (p.eventType === 'UPDATE') setBookings((prev) => prev.map((x) => x.id === (p.new as any).id ? p.new as any : x));
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, (p) => {
-        if (p.eventType === 'INSERT') setNotifs((prev) => [p.new as any, ...prev]);
-        else if (p.eventType === 'UPDATE') setNotifs((prev) => prev.map((x) => x.id === (p.new as any).id ? p.new as any : x));
-      })
-      .subscribe();
-    return () => { cancel = true; supabase.removeChannel(ch); };
+    });
+    return () => { cancel = true; stop(); };
   }, [user?.id]);
 
   const handleLogout = async () => {

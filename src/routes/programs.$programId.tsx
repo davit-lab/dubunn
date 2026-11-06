@@ -3,8 +3,7 @@ import { useLangStore } from '@/store/langStore';
 import { useContentStore } from '@/store/contentStore';
 import { motion } from 'framer-motion';
 import { ArrowRight, ChevronLeft, Check } from 'lucide-react';
-import { useState } from 'react';
-import { VideoPlayer } from '@/components/site/VideoPlayer';
+import { MediaGallery } from '@/components/site/MediaGallery';
 import { ReviewsSection } from '@/components/site/ReviewsSection';
 
 export const Route = createFileRoute('/programs/$programId')({
@@ -25,11 +24,9 @@ function ProgramDetail() {
   const p = (t.programs || []).find((x: any) => x.id === programId);
   if (!p) throw notFound();
 
-  const gallery: string[] = p.gallery || [p.image];
   const reviews: any[] = p.reviews || [];
   const faq: any[] = p.faq || [];
   const features: string[] = p.features || [];
-  const [active, setActive] = useState(0);
 
   return (
     <div className="max-w-[1300px] mx-auto px-4 md:px-10 py-8 md:py-14">
@@ -38,25 +35,7 @@ function ProgramDetail() {
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div className="flex flex-col gap-3">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="aspect-[4/5] overflow-hidden rounded-[32px] bg-card border border-border shadow-glow">
-            <img src={gallery[active] || p.image} alt={p.name} className="w-full h-full object-cover" />
-          </motion.div>
-          {gallery.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto">
-              {gallery.map((img, i) => (
-                <button key={i} onClick={() => setActive(i)} className={`w-20 h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 ${active === i ? 'border-secondary' : 'border-transparent'}`}>
-                  <img src={img} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-          {p.video && (
-            <div className="aspect-video overflow-hidden rounded-[24px] bg-black border border-border">
-              <VideoPlayer src={p.video} poster={p.image} />
-            </div>
-          )}
-        </div>
+        <MediaGallery name={p.name} image={p.image} gallery={p.gallery} video={p.video} galleryVideos={p.galleryVideos} accentClass="border-secondary" />
 
         <div className="flex flex-col gap-5">
           <div className="flex items-center gap-2">

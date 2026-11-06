@@ -225,6 +225,20 @@ function ListEditor({ lang, field, priceKey, translations, updateTranslation, fl
             </div>
 
             <div className="md:col-span-2 border-t border-border pt-3">
+              <SubLabel>Gallery videos</SubLabel>
+              <div className="flex flex-col gap-2 mt-2">
+                {(item.galleryVideos || []).map((video: string, vi: number) => (
+                  <div key={vi} className="flex items-center gap-2">
+                    <span className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-xs font-bold">V{vi + 1}</span>
+                    <input value={video} onChange={(e) => { const next = [...(item.galleryVideos || [])]; next[vi] = e.target.value; updateTranslation(lang, `${field}.${i}.galleryVideos`, next); flash(); }} className="flex-1 p-2 rounded-lg bg-input border border-border text-xs" placeholder="Video URL, YouTube, Vimeo, or uploaded file" />
+                    <button onClick={() => { const next = [...(item.galleryVideos || [])]; next.splice(vi, 1); updateTranslation(lang, `${field}.${i}.galleryVideos`, next); flash(); }} className="text-destructive"><Trash2 size={14} /></button>
+                  </div>
+                ))}
+                <MediaPicker label="Add gallery video" accept="video/*" value="" onChange={(v) => { const next = [...(item.galleryVideos || []), v]; updateTranslation(lang, `${field}.${i}.galleryVideos`, next); flash(); }} multiple onChangeMany={(urls) => { const next = [...(item.galleryVideos || []), ...urls]; updateTranslation(lang, `${field}.${i}.galleryVideos`, next); flash(); }} />
+              </div>
+            </div>
+
+            <div className="md:col-span-2 border-t border-border pt-3">
               <SubLabel>Features (bullet points)</SubLabel>
               {(item.features || []).map((f: string, fi: number) => (
                 <div key={fi} className="flex items-center gap-2 mt-2">
@@ -270,8 +284,8 @@ function ListEditor({ lang, field, priceKey, translations, updateTranslation, fl
           : field === 'animators'
           ? { id: `a_${Date.now()}`, name: 'New', category: '-', image: '', description: '', pricePerHour: 50, ageGroup: '6-12', maxHours: 4, role: 'გმირი' }
           : field === 'programs'
-          ? { id: `p_${Date.now()}`, name: 'New', category: '-', image: '', description: '', pricePerHour: 60, ageRange: '3-12', maxAnimators: 1 }
-          : { id: `s_${Date.now()}`, name: 'New', category: '-', image: '', description: '', price: 50 };
+          ? { id: `p_${Date.now()}`, name: 'New', category: '-', image: '', gallery: [], galleryVideos: [], description: '', pricePerHour: 60, ageRange: '3-12', maxAnimators: 1 }
+          : { id: `s_${Date.now()}`, name: 'New', category: '-', image: '', gallery: [], galleryVideos: [], description: '', price: 50 };
         updateTranslation(lang, field, [...items, newItem]); flash();
       }} className="self-start flex items-center gap-2 text-primary font-bold text-sm"><Plus size={14} /> Add</button>
     </div>

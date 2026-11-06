@@ -3,8 +3,8 @@ import { useLangStore } from '@/store/langStore';
 import { useContentStore } from '@/store/contentStore';
 import { motion } from 'framer-motion';
 import { ArrowRight, Star, ChevronLeft, Check, Play, ChevronDown, HelpCircle } from 'lucide-react';
-import { useState } from 'react';
 import { VideoPlayer } from '@/components/site/VideoPlayer';
+import { MediaGallery } from '@/components/site/MediaGallery';
 import { isVideoFile, getEmbedUrl } from '@/lib/media';
 import { ReviewsSection } from '@/components/site/ReviewsSection';
 
@@ -19,8 +19,6 @@ export const Route = createFileRoute('/services/$serviceId')({
   ),
 });
 
-type MediaItem = { type: 'image' | 'video'; src: string };
-
 function ServiceDetail() {
   const { serviceId } = Route.useParams();
   const { lang } = useLangStore();
@@ -29,17 +27,9 @@ function ServiceDetail() {
   const service = (t.services || []).find((s: any) => s.id === serviceId);
   if (!service) throw notFound();
 
-  // Build a unified media list (images + video) so video lives in the gallery, not duplicated below
-  const galleryImages: string[] = (service.gallery && service.gallery.length ? service.gallery : [service.image]).filter(Boolean);
-  const media: MediaItem[] = [
-    ...galleryImages.map((src) => ({ type: 'image' as const, src })),
-    ...(service.video ? [{ type: 'video' as const, src: service.video }] : []),
-  ];
   const reviews: any[] = service.reviews || [];
   const faq: any[] = service.faq || [];
   const features: string[] = service.features || [];
-  const [active, setActive] = useState(0);
-  const current = media[active] || { type: 'image', src: service.image };
 
   const avgRating = reviews.length
     ? reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / reviews.length
@@ -53,49 +43,7 @@ function ServiceDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Media */}
-        <div className="flex flex-col gap-3">
-          <motion.div
-            key={active}
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-            className="aspect-[4/3] overflow-hidden rounded-[32px] bg-card border border-border shadow-glow relative group"
-          >
-            {current.type === 'video' ? (
-              <VideoPlayer src={current.src} poster={service.image} />
-            ) : (
-              <img src={current.src} alt={service.name} className="w-full h-full object-cover" />
-            )}
-          </motion.div>
-
-          {media.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {media.map((m, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActive(i)}
-                  className={`relative w-20 h-20 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition-all ${active === i ? 'border-primary scale-105' : 'border-transparent opacity-70 hover:opacity-100'}`}
-                  aria-label={m.type === 'video' ? 'Play video' : `Image ${i + 1}`}
-                >
-                  {m.type === 'video' ? (
-                    <>
-                      {(isVideoFile(m.src) && !getEmbedUrl(m.src)) ? (
-                        <video src={m.src} className="w-full h-full object-cover" muted />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary/30 to-accent/30" />
-                      )}
-                      <span className="absolute inset-0 flex items-center justify-center bg-black/40">
-                        <Play size={20} className="text-white fill-white" />
-                      </span>
-                    </>
-                  ) : (
-                    <img src={m.src} className="w-full h-full object-cover" alt="" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <MediaGallery name={service.name} image={service.image} gallery={service.gallery} video={service.video} galleryVideos={service.galleryVideos} />
 
         {/* Info */}
         <div className="flex flex-col gap-5">

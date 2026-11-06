@@ -1,0 +1,316 @@
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { useLangStore } from '@/store/langStore';
+import { useContentStore } from '@/store/contentStore';
+import { ArrowRight, Star, PartyPopper, Cake, Gift, Facebook, Instagram, Phone } from 'lucide-react';
+import { VideoPlayer } from '@/components/site/VideoPlayer';
+import { isVideoFile, getEmbedUrl } from '@/lib/media';
+
+export const Route = createFileRoute('/')({ component: Home });
+
+const STICKER_COLORS = ['bg-coral', 'bg-sun', 'bg-grass', 'bg-sky'] as const;
+
+function Sticker({
+  item,
+  type,
+  index,
+}: {
+  item: any;
+  type: 'animator' | 'service' | 'program';
+  index: number;
+}) {
+  const { lang } = useLangStore();
+  const tilt = index % 2 === 0 ? 'tilt-l-soft' : 'tilt-r-soft';
+  const tape = STICKER_COLORS[index % STICKER_COLORS.length];
+
+  return (
+    <div className={`group relative bg-white border-[3px] border-ink rounded-3xl p-3 shadow-sticker-md press ${tilt}`}>
+      {/* washi tape on top */}
+      <div className={`washi ${tape === 'bg-coral' ? 'washi-coral' : tape === 'bg-sun' ? '' : tape === 'bg-grass' ? 'washi-grass' : 'washi-sky'} -top-3 left-6 -rotate-6 rounded-sm`} />
+
+      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border-[3px] border-ink">
+        <img
+          src={item.image}
+          alt={item.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+        {item.category && (
+          <span className="absolute top-3 left-3 px-3 py-1 bg-sun text-ink text-[11px] font-black uppercase tracking-wider border-[2px] border-ink rounded-full shadow-sticker">
+            {item.category}
+          </span>
+        )}
+        {type === 'program' && item.ageRange && (
+          <span className="absolute top-3 right-3 px-3 py-1 bg-grass text-white text-[11px] font-black border-[2px] border-ink rounded-full shadow-sticker">
+            {item.ageRange}y+
+          </span>
+        )}
+      </div>
+
+      <div className="px-2 pt-4 pb-2 flex flex-col gap-2">
+        <h3 className="font-display text-xl text-ink leading-tight">{item.name}</h3>
+        <p className="text-sm text-muted-foreground line-clamp-2 font-medium">{item.description}</p>
+        <div className="flex items-center justify-between mt-1">
+          {type !== 'animator' ? (
+            <span className="font-display text-2xl text-coral">
+              {type === 'program' ? `${item.price ?? item.pricePerHour ?? 0}₾` : `${item.price}₾`}
+            </span>
+          ) : (
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              {lang === 'ka' ? 'გაიცანი' : 'Meet me'}
+            </span>
+          )}
+          <span className="w-10 h-10 rounded-full bg-coral text-white border-[3px] border-ink flex items-center justify-center shadow-sticker group-hover:rotate-12 transition-transform">
+            <ArrowRight size={16} />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureBox({
+  icon,
+  title,
+  desc,
+  color,
+  index,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  color: 'coral' | 'sun' | 'grass' | 'sky';
+  index: number;
+}) {
+  const tilt = index === 1 ? 'md:translate-y-4' : index === 2 ? 'md:-translate-y-2' : '';
+  const colorBg: Record<string, string> = {
+    coral: 'bg-coral text-white',
+    sun: 'bg-sun text-ink',
+    grass: 'bg-grass text-white',
+    sky: 'bg-sky text-white',
+  };
+  return (
+    <div className={`relative bg-white border-[3px] border-ink rounded-3xl p-7 md:p-8 shadow-sticker-md press ${tilt}`}>
+      <div className={`absolute -top-6 -left-2 w-14 h-14 rounded-2xl border-[3px] border-ink ${colorBg[color]} flex items-center justify-center shadow-sticker -rotate-6`}>
+        {icon}
+      </div>
+      <h3 className="font-display text-2xl text-ink mt-4 mb-2">{title}</h3>
+      <p className="text-base text-muted-foreground font-medium leading-relaxed">{desc}</p>
+    </div>
+  );
+}
+
+function SectionHeader({
+  kicker,
+  title,
+  link,
+  linkLabel,
+  accent = 'coral',
+}: {
+  kicker: string;
+  title: string;
+  link: string;
+  linkLabel: string;
+  accent?: 'coral' | 'sun' | 'grass' | 'sky';
+}) {
+  const accentBg: Record<string, string> = {
+    coral: 'bg-coral text-white',
+    sun: 'bg-sun text-ink',
+    grass: 'bg-grass text-white',
+    sky: 'bg-sky text-white',
+  };
+  return (
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-10">
+      <div className="flex flex-col gap-3">
+        <span className={`self-start inline-block px-3 py-1 ${accentBg[accent]} border-[2px] border-ink rounded-lg text-xs font-black uppercase tracking-wider shadow-sticker -rotate-2`}>
+          {kicker}
+        </span>
+        <h2 className="font-display text-5xl md:text-6xl text-ink leading-none">
+          <span className="underline-hand">{title}</span>
+        </h2>
+      </div>
+      <Link
+        to={link}
+        className="inline-flex items-center gap-2 bg-white text-ink border-[3px] border-ink rounded-xl px-5 py-3 font-black text-sm uppercase tracking-wider shadow-sticker press"
+      >
+        {linkLabel}
+        <ArrowRight size={16} />
+      </Link>
+    </div>
+  );
+}
+
+function Home() {
+  const { lang } = useLangStore();
+  const { translations, assets } = useContentStore();
+  const t = translations[lang];
+  const contact = (assets as any).contact || {};
+  const heroVideo = (assets as any).heroVideo as string | undefined;
+  const heroFallback = (assets as any).heroFallback as string | undefined;
+  const showVideo = heroVideo && (isVideoFile(heroVideo) || getEmbedUrl(heroVideo));
+
+  const features = [
+    {
+      icon: <Star size={26} />,
+      title: lang === 'ka' ? 'პროფესიონალი ანიმატორები' : 'Pro Animators',
+      desc:
+        lang === 'ka'
+          ? 'გამოცდილი პერსონაჟები, რომლებიც გახდიან თქვენი დღესასწაულის გმირები.'
+          : 'Experienced characters who become the heroes of every celebration.',
+      color: 'coral' as const,
+    },
+    {
+      icon: <PartyPopper size={26} />,
+      title: lang === 'ka' ? 'ასაკის შესაბამისად' : 'Age-Appropriate',
+      desc:
+        lang === 'ka'
+          ? 'ინდივიდუალურად შერჩეული გასართობი თითოეული ასაკისთვის.'
+          : 'Hand-picked entertainment for every age group.',
+      color: 'sun' as const,
+    },
+    {
+      icon: <Gift size={26} />,
+      title: lang === 'ka' ? 'სრული სერვისი' : 'Full Service',
+      desc:
+        lang === 'ka'
+          ? 'ფოტო, ვიდეო, დეკორაცია, ნამცხვარი — ყველაფერი ერთ ადგილას.'
+          : 'Photo, video, decoration, cake — everything in one place.',
+      color: 'grass' as const,
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-20 md:gap-28 pb-8">
+      {/* === HERO === */}
+      <section className="pt-6 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto bg-white border-[3px] border-ink rounded-[2rem] md:rounded-[2.5rem] shadow-sticker-xl overflow-hidden relative">
+          <div className="grid lg:grid-cols-2">
+            {/* Text side */}
+            <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center gap-6 relative">
+              <h1 className="font-display text-5xl md:text-6xl lg:text-7xl text-ink leading-[0.85] tracking-tight">
+                <span className="inline-block">DUBUNI</span>
+                <span className="text-coral">!</span>
+              </h1>
+              <div className="h-3 w-44 bg-sun -mt-2 rounded-full -rotate-1 border-[2px] border-ink" />
+
+              <p className="text-lg md:text-xl text-muted-foreground font-medium leading-relaxed max-w-xl">
+                {t.ui.heroDesc ||
+                  (lang === 'ka'
+                    ? 'დაუვიწყარი თავგადასავლები, ანიმატორები და საუკეთესო გარემო თქვენი დღესასწაულისთვის.'
+                    : 'Unforgettable adventures, animators and the best vibes for your celebration.')}
+              </p>
+
+              <div className="flex flex-wrap gap-4 mt-2">
+                <Link
+                  to="/booking"
+                  className="group inline-flex min-h-16 items-center justify-center gap-5 rounded-2xl border-[3px] border-ink bg-gradient-to-br from-red-500 to-red-700 px-7 py-4 font-display text-xl text-white shadow-sticker-lg press focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-red-300 focus-visible:ring-offset-4 motion-reduce:transition-none"
+                >
+                  {t.ui.book || (lang === 'ka' ? 'დაჯავშნა' : 'Book now')}
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30" aria-hidden="true">
+                    <ArrowRight size={20} className="transition-transform group-hover:translate-x-1 motion-reduce:transform-none motion-reduce:transition-none" />
+                  </span>
+                </Link>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 text-sm font-bold text-ink">
+                <a
+                  href={`tel:${String(contact.phone || '').replace(/[^+\d]/g, '')}`}
+                  className="inline-flex items-center gap-2 hover:text-coral transition-colors"
+                >
+                  <Phone size={18} />
+                  {contact.phone || ''}
+                </a>
+                <a
+                  href={contact.instagram || '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Instagram"
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-sun border-[3px] border-ink shadow-sticker hover:bg-coral hover:text-white transition-colors"
+                >
+                  <Instagram size={18} />
+                </a>
+                <a
+                  href={contact.facebook || '#'}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Facebook"
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-sky border-[3px] border-ink shadow-sticker hover:bg-coral hover:text-white transition-colors"
+                >
+                  <Facebook size={18} />
+                </a>
+              </div>
+
+            </div>
+
+            {/* Media side */}
+            <div className="relative bg-sun border-l-0 lg:border-l-[3px] border-t-[3px] lg:border-t-0 border-ink p-6 md:p-10 flex items-center justify-center min-h-[420px]">
+              {/* Decorative dots */}
+              <div
+                className="absolute inset-0 opacity-30 pointer-events-none"
+                style={{
+                  backgroundImage:
+                    'radial-gradient(circle, var(--ink) 1.5px, transparent 1.5px)',
+                  backgroundSize: '22px 22px',
+                }}
+              />
+              <div className="relative w-full max-w-md aspect-[4/5] bg-white border-[3px] border-ink rounded-2xl shadow-sticker-xl overflow-hidden tilt-r hover:rotate-0 transition-transform duration-500">
+                {showVideo ? (
+                  getEmbedUrl(heroVideo!) ? (
+                    <VideoPlayer src={heroVideo!} />
+                  ) : (
+                    <video
+                      src={heroVideo}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="auto"
+                      disablePictureInPicture
+                      onCanPlay={(event) => { void event.currentTarget.play().catch(() => {}); }}
+                      onPause={(event) => { if (!document.hidden) void event.currentTarget.play().catch(() => {}); }}
+                      poster={heroFallback}
+                      className="w-full h-full object-cover"
+                    />
+                  )
+                ) : heroFallback ? (
+                  <img src={heroFallback} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-coral flex items-center justify-center">
+                    <Cake size={80} className="text-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Floating badges */}
+              <div className="absolute top-8 right-6 bg-coral text-white border-[3px] border-ink rounded-2xl px-4 py-2 font-display text-lg shadow-sticker rotate-12 hidden md:block">
+                PARTY!
+              </div>
+              <div className="absolute bottom-8 left-6 bg-sky text-white border-[3px] border-ink rounded-full px-4 py-2 font-display text-base shadow-sticker -rotate-6 hidden md:block">
+                🎈 join us
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Programs */}
+      <section className="px-4 md:px-8">
+        <div className="max-w-7xl mx-auto">
+          <SectionHeader
+            kicker={t.ui.programsSubtitle || (lang === 'ka' ? 'ასაკის მიხედვით' : 'By age')}
+            title={t.ui.programsTitle || (lang === 'ka' ? 'პროგრამები' : 'Programs')}
+            link="/programs"
+            linkLabel={t.ui.seeAll || (lang === 'ka' ? 'ყველა' : 'See all')}
+            accent="sun"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {(t.programs || []).map((p: any, i: number) => (
+              <Link key={p.id} to="/programs/$programId" params={{ programId: p.id }}>
+                <Sticker item={p} type="program" index={i} />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+    </div>
+  );
+}

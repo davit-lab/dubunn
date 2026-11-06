@@ -210,12 +210,12 @@ function Home() {
                 </Link>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-sm font-bold text-ink">
+              <div className="flex flex-wrap items-center gap-3 text-base font-bold text-ink">
                 <a
                   href={`tel:${String(contact.phone || '').replace(/[^+\d]/g, '')}`}
                   className="inline-flex items-center gap-2 hover:text-coral transition-colors"
                 >
-                  <Phone size={18} />
+                  <Phone size={21} />
                   {contact.phone || ''}
                 </a>
                 <a

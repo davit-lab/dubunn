@@ -89,7 +89,6 @@ export const TRANSLATIONS: Record<Language, any> = {
       { label: 'ანიმატორები', href: '/hosts' },
       { label: 'პროგრამები', href: '/programs' },
       { label: 'სერვისები', href: '/services' },
-      { label: 'FAQ', href: '/faq' },
     ],
     animators: [
       { id: 'spider', name: 'ადამიანი ობობა', pricePerHour: 80, maxHours: 4, role: 'გმირი', category: 'სუპერგმირი', image: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=1000&auto=format&fit=crop', description: 'აქტიური და ენერგიული პროგრამა.', ageGroup: '6-12' },
@@ -197,7 +196,6 @@ export const TRANSLATIONS: Record<Language, any> = {
       { label: 'Animators', href: '/hosts' },
       { label: 'Programs', href: '/programs' },
       { label: 'Services', href: '/services' },
-      { label: 'FAQ', href: '/faq' },
     ],
     animators: [
       { id: 'spider', name: 'Spider-Man', pricePerHour: 80, maxHours: 4, role: 'Character', category: 'Superhero', image: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?q=80&w=1000&auto=format&fit=crop', description: 'Active and energetic program.', ageGroup: '6-12' },

@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as ProgramsRouteImport } from './routes/programs'
 import { Route as HostsRouteImport } from './routes/hosts'
-import { Route as FaqRouteImport } from './routes/faq'
 import { Route as BookingRouteImport } from './routes/booking'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnimatorsRouteImport } from './routes/animators'
@@ -41,11 +40,6 @@ const ProgramsRoute = ProgramsRouteImport.update({
 const HostsRoute = HostsRouteImport.update({
   id: '/hosts',
   path: '/hosts',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FaqRoute = FaqRouteImport.update({
-  id: '/faq',
-  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookingRoute = BookingRouteImport.update({
@@ -126,7 +120,6 @@ export interface FileRoutesByFullPath {
   '/animators': typeof AnimatorsRouteWithChildren
   '/auth': typeof AuthRoute
   '/booking': typeof BookingRoute
-  '/faq': typeof FaqRoute
   '/hosts': typeof HostsRouteWithChildren
   '/programs': typeof ProgramsRouteWithChildren
   '/services': typeof ServicesRouteWithChildren
@@ -145,7 +138,6 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/booking': typeof BookingRoute
-  '/faq': typeof FaqRoute
   '/animators/$animatorId': typeof AnimatorsAnimatorIdRoute
   '/hosts/$hostId': typeof HostsHostIdRoute
   '/programs/$programId': typeof ProgramsProgramIdRoute
@@ -163,7 +155,6 @@ export interface FileRoutesById {
   '/animators': typeof AnimatorsRouteWithChildren
   '/auth': typeof AuthRoute
   '/booking': typeof BookingRoute
-  '/faq': typeof FaqRoute
   '/hosts': typeof HostsRouteWithChildren
   '/programs': typeof ProgramsRouteWithChildren
   '/services': typeof ServicesRouteWithChildren
@@ -185,7 +176,6 @@ export interface FileRouteTypes {
     | '/animators'
     | '/auth'
     | '/booking'
-    | '/faq'
     | '/hosts'
     | '/programs'
     | '/services'
@@ -204,7 +194,6 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/booking'
-    | '/faq'
     | '/animators/$animatorId'
     | '/hosts/$hostId'
     | '/programs/$programId'
@@ -221,7 +210,6 @@ export interface FileRouteTypes {
     | '/animators'
     | '/auth'
     | '/booking'
-    | '/faq'
     | '/hosts'
     | '/programs'
     | '/services'
@@ -242,7 +230,6 @@ export interface RootRouteChildren {
   AnimatorsRoute: typeof AnimatorsRouteWithChildren
   AuthRoute: typeof AuthRoute
   BookingRoute: typeof BookingRoute
-  FaqRoute: typeof FaqRoute
   HostsRoute: typeof HostsRouteWithChildren
   ProgramsRoute: typeof ProgramsRouteWithChildren
   ServicesRoute: typeof ServicesRouteWithChildren
@@ -269,13 +256,6 @@ declare module '@tanstack/react-router' {
       path: '/hosts'
       fullPath: '/hosts'
       preLoaderRoute: typeof HostsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/faq': {
-      id: '/faq'
-      path: '/faq'
-      fullPath: '/faq'
-      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/booking': {
@@ -440,7 +420,6 @@ const rootRouteChildren: RootRouteChildren = {
   AnimatorsRoute: AnimatorsRouteWithChildren,
   AuthRoute: AuthRoute,
   BookingRoute: BookingRoute,
-  FaqRoute: FaqRoute,
   HostsRoute: HostsRouteWithChildren,
   ProgramsRoute: ProgramsRouteWithChildren,
   ServicesRoute: ServicesRouteWithChildren,
